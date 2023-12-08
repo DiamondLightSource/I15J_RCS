@@ -1,0 +1,4 @@
+# ensuring data files are not included 
+data/
+venv/
+#
