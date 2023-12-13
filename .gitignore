@@ -1,4 +1,8 @@
 # ensuring data files are not included 
 data/
 venv/
+src/__pycache__
+src/test.egg-info
+.vscode
+
 #

@@ -5,12 +5,40 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Testing",
             "type": "python",
-            "request": "launch",
-            "program": "${file}",
+            "program": "src/main.py",
+            "args": [],
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "request": "launch"
+        },
+        {
+            "name": "Async_Test",
+            "type": "python",
+            "program": "src/tst.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "request": "launch"
+        },
+        {
+            "name": "Testing",
+            "type": "python",
+            "program": "src/test.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "request": "launch"
+        },
+        {
+            "name": "Calibration",
+            "type": "python",
+            "program": "src/calibration.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "request": "launch"
         }
     ]
 }

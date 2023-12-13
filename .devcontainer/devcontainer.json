@@ -20,7 +20,6 @@
         }
     },
     // Set *default* container specific settings.json values on container create.
-    
     "customizations": {
         "vscode": {
             // Add the IDs of extensions you want installed when the container is created.
@@ -30,25 +29,25 @@
                 "redhat.vscode-yaml",
                 "ryanluker.vscode-coverage-gutters"
             ],
-            
             "settings": {
                 "python.defaultInterpreterPath": "/venv/bin/python"
             }
         }
     },
     // Make sure the files we are mapping into the container exist on the host
-    "initializeCommand": "bash -c 'for i in $HOME/.inputrc; do [ -f $i ] || touch $i; done'" ,
+    "initializeCommand": "bash -c 'for i in $HOME/.inputrc; do [ -f $i ] || touch $i; done'",
     "runArgs": [
         "--net=host",
         "--security-opt=label=type:container_runtime_t"
     ],
     "mounts": [
         "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind",
-        "source=${localEnv:HOME}/.inputrc,target=/root/.inputrc,type=bind"
+        "source=${localEnv:HOME}/.inputrc,target=/root/.inputrc,type=bind",
+        // "source=/dls/science/groups/das/i15_1_images,target=/dls/science/groups/das/i15_1_images,type=bind"
     ],
     // make the workspace folder the same inside and outside of the container
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace",
     // After the container is created, install the python project in editable form
-    "postCreateCommand": "pip install -e; pip install opencv-python; pip install matplotlib; sudo apt-get update; sudo apt install libgl1-mesa-glx -y"
+    "postCreateCommand": "sudo apt-get update; sudo apt install libgl1-mesa-glx -y"
 }
