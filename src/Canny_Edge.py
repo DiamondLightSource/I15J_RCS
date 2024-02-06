@@ -23,23 +23,17 @@ def dewarp(image: NParray, inputs, plot=False) -> NParray:
 
 
 def thresholding(image: NParray, plot: bool = False) -> dict:
-    thresh: Dict[str, NParray] = {}
-    for i in range(40, 80, 5):
-        ret, thresh[str(i)] = cv2.threshold(image, i, 0, cv2.THRESH_TOZERO)
+    thresh = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+            cv2.THRESH_BINARY,11,3.5)
+    #Not used, but a good alternative
+    thresh1 = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_MEAN_C,\
+            cv2.THRESH_BINARY,11,3.5)
 
     if plot:
         # Plotting
-        titles = list(thresh.keys())
-        images = list(thresh.values())
-        length = (len(titles) // 2) + 1
-        for i in range(len(titles)):
-            plt.subplot(2, length, i + 1), plt.imshow(
-                images[i], "gray", vmin=0, vmax=255
-            )
-            plt.title(titles[i])
-            plt.xticks([]), plt.yticks([])
-        plt.show()
-
+        cv2.imshow("Gaussian Adaptive Threshold", thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
     return thresh
 
 
@@ -104,18 +98,19 @@ def adding_circles(circles, image, plot=False):
 
 
 def Canning(image: NParray) -> NParray:
-    x = thresholding(image, plot=True)
-    a50_edges_canny = cv2.Canny(x["50"], 150, 250)
-    a50_edges_gauss = cv2.GaussianBlur(x["50"], (5, 5), 0)
+    thresh = thresholding(image)
+    a50_edges_canny = cv2.Canny(thresh, 150, 250)
+    a50_edges_gauss = cv2.GaussianBlur(thresh, (5, 5), 0)
+    
 
     detected_circles = cv2.HoughCircles(
         a50_edges_gauss,
         cv2.HOUGH_GRADIENT,
         dp=1,
-        minDist=210,
-        param1=250,
-        param2=25,
-        minRadius=75,
+        minDist=215,
+        param1=260,
+        param2=40,
+        minRadius=85,
         maxRadius=130,
     )
 
@@ -140,19 +135,17 @@ def Canning(image: NParray) -> NParray:
         sorted(centers[16:], key=lambda x: x[0]),
     ]
     centers_sorted: Dict[int, List[int]] = {}
+    result: Dict[int,str] = {}
     counter: int = 1
-    lids: int = 0
-    pucks: int = 0
-    none: int = 0
 
     for i in range(len(centers)):
         for j in centers[i]:
             centers_sorted[counter] = j
             counter += 1
 
-    for circle_param in centers_sorted.values():
+    for circle_param,pos in zip(centers_sorted.values(),centers_sorted.keys()):
         if circle_param[2] < 100:
-            none += 1
+            result[pos] = "None"
         else:
             # Mask Image with Circle
             mask = np.zeros_like(image)
@@ -166,6 +159,7 @@ def Canning(image: NParray) -> NParray:
             )
             masked = cv2.bitwise_and(image, image, mask=mask)
 
+            #slicing to make r = 130 (aka max radiums)
             y, x, r = circle_param
             if r > x:
                 x_lower = 0
@@ -178,12 +172,12 @@ def Canning(image: NParray) -> NParray:
 
             # Slicing image into sections for quicker analysis
             masked2 = masked[x_lower : x + r, y_lower : y + r]
-            fourier(masked2, plot=True)
+            # fourier(masked2)
             # template(masked2)
 
             # Find small circles
             mini_circles = cv2.HoughCircles(
-                masked,
+                masked2,
                 cv2.HOUGH_GRADIENT,
                 dp=1,
                 minDist=25,
@@ -196,16 +190,17 @@ def Canning(image: NParray) -> NParray:
             if mini_circles is not None:
                 mini_circles = np.uint16(np.around(mini_circles))
                 if np.shape(mini_circles)[1] > 5:
-                    # show_circles = adding_circles(mini_circles, masked, plot=True)
-                    pucks += 1
+                    show_circles = adding_circles(mini_circles, masked2)
+                    result[pos] = "Puck"
                 else:
-                    lids += 1
+                    result[pos] = "Lid"
             else:
-                lids += 1
+                result[pos] = "Lid"
             pass
-    print(f"Lids: {lids}, Pucks: {pucks}, None: {none}")
 
-    # # show Canny Edge Detection
+    print(result)
+
+    # show Canny Edge Detection
     # cv2.imshow("edges", a50_edges_canny)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
