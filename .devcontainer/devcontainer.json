@@ -49,5 +49,5 @@
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace",
     // After the container is created, install the python project in editable form
-    "postCreateCommand": "pip install -e; pip install opencv-python; pip install matplotlib; sudo apt-get update; sudo apt install libgl1-mesa-glx -y"
+    "postCreateCommand": "sudo apt-get update; sudo apt install libgl1-mesa-glx -y"
 }

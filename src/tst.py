@@ -6,10 +6,12 @@ import numpy as np
 import asyncio
 import os
 from Canny_Edge import rescaleFrame, dewarp, Canning
+
 # import cProfile,pstats,io
 # from pstats import SortKey
 # pr = cProfile.Profile()
 # pr.enable()
+
 
 async def main():
     count = 20
@@ -31,11 +33,11 @@ async def main():
             dewarped = dewarp(gray_image, input_coordinates)
             dewarped = cv2.equalizeHist(dewarped)
             output = Canning(dewarped)
-            cv2.imwrite(os.path.join(ouput_dir , f'{count}.jpg'), img)
-            cv2.imwrite(os.path.join(dir_proc , f'{count}.jpg'), output)
+            cv2.imwrite(os.path.join(ouput_dir, f"{count}.jpg"), img)
+            cv2.imwrite(os.path.join(dir_proc, f"{count}.jpg"), output)
             count += 1
             await asyncio.sleep(3600)
-         
+
 
 asyncio.run(main())
 # pr.disable()
@@ -44,7 +46,3 @@ asyncio.run(main())
 # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
 # ps.print_stats()
 # print(s.getvalue())
-
-
-
-
