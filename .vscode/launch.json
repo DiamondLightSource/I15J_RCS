@@ -21,6 +21,24 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "request": "launch"
+        },
+        {
+            "name": "Testing",
+            "type": "python",
+            "program": "src/test.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "request": "launch"
+        },
+        {
+            "name": "Calibration",
+            "type": "python",
+            "program": "src/calibration.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "request": "launch"
         }
     ]
 }

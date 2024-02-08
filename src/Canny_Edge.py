@@ -2,16 +2,8 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 from typing import Dict, List, NewType
+
 NParray = NewType("NParray", np.ndarray)
-
-# Resize Image
-
-def rescaleFrame(frame: NParray, scale: float=0.60) -> NParray:
-    width = int(frame.shape[1] * scale)
-    height = int(frame.shape[0] * scale)
-    dimensions = (width, height)
-
-    return cv2.resize(frame, dimensions, interpolation=cv2.INTER_AREA)
 
 
 def dewarp(image: NParray, inputs, plot=False) -> NParray:
@@ -22,7 +14,7 @@ def dewarp(image: NParray, inputs, plot=False) -> NParray:
     M = cv2.getPerspectiveTransform(input_points, output_points)
     dst = cv2.warpPerspective(image, M, (rows, rows))
 
-    if plot == True:
+    if plot:
         cv2.imshow("originial", image)
         cv2.imshow("dewarped", dst)
         cv2.waitKey(0)
@@ -30,40 +22,75 @@ def dewarp(image: NParray, inputs, plot=False) -> NParray:
     return dst
 
 
-def thresholding(image: NParray, plot: bool =False) -> dict:
-    thresh: Dict[str,NParray] = {}
-    for i in range(50, 121, 5):
-        ret, thresh[str(i)] = cv2.threshold(image, i, 0, cv2.THRESH_TOZERO)
+def thresholding(image: NParray, plot: bool = False) -> dict:
+    thresh = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+            cv2.THRESH_BINARY,11,3.5)
+    #Not used, but a good alternative
+    thresh1 = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_MEAN_C,\
+            cv2.THRESH_BINARY,11,3.5)
 
-    # Put in Documentation: Thresholding - https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplot.html
-
-    if plot == True:
+    if plot:
         # Plotting
-        titles = list(thresh.keys())
-        images = list(thresh.values())
-        length = (len(titles) // 2) + 1
-        for i in range(len(titles)):
-            plt.subplot(2, length, i + 1), plt.imshow(
-                images[i], "gray", vmin=0, vmax=255
-            )
-            plt.title(titles[i])
-            plt.xticks([]), plt.yticks([])
-        plt.show()
-
+        cv2.imshow("Gaussian Adaptive Threshold", thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
     return thresh
 
 
-def adding_circles(circles, image,plot=False):
+def fourier(image: NParray, plot: bool = False):
+    fourier = np.fft.fft2(np.float32(image))
+    fourier_shift = np.fft.fftshift(abs(fourier))
+    if plot:
+        fig, axs = plt.subplots(2)
+        axs[0].imshow(image, cmap="grey")
+        top = np.quantile(fourier_shift, 0.98)
+        bottom = np.quantile(fourier_shift, 0.2)
+        axs[1].imshow(fourier_shift, vmin=bottom, vmax=top)
+        plt.show()
+        pass
+
+
+def template(image: NParray):
+    template = cv2.imread("templates/lid.jpg", 0)
+    h, w = template.shape
+
+    methods = [
+        cv2.TM_CCOEFF,
+        cv2.TM_CCOEFF_NORMED,
+        cv2.TM_CCORR,
+        cv2.TM_CCORR_NORMED,
+        cv2.TM_SQDIFF,
+        cv2.TM_SQDIFF_NORMED,
+    ]
+
+    for method in methods:
+        img2 = image.copy()
+
+        result = cv2.matchTemplate(img2, template, method)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+            location = min_loc
+        else:
+            location = max_loc
+
+        bottom_right = (location[0] + w, location[1] + h)
+        cv2.rectangle(img2, location, bottom_right, 255, 5)
+        cv2.imshow("Match", img2)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    pass
+
+
+def adding_circles(circles, image, plot=False):
     for pt in circles[0, :]:
         x, y, r = pt[0], pt[1], pt[2]
-
         # Draw the circumference of the circle.
         cv2.circle(image, (x, y), r, (0, 255, 0), 2)
 
         # Draw a small circle (of radius 1) to show the center.
-        cv2.circle(image, (x, y), 5, (0, 0, 255), 3)
+        # cv2.circle(image, (x, y), 5, (0, 0, 255), 3)
 
-    if plot == True:
+    if plot:
         cv2.imshow("circles", image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -71,18 +98,19 @@ def adding_circles(circles, image,plot=False):
 
 
 def Canning(image: NParray) -> NParray:
-    x = thresholding(image)
-    a50_edges_canny = cv2.Canny(x["50"], 150, 250)
-    a50_edges_gauss = cv2.GaussianBlur(x["50"], (5, 5), 0)
+    thresh = thresholding(image)
+    a50_edges_canny = cv2.Canny(thresh, 150, 250)
+    a50_edges_gauss = cv2.GaussianBlur(thresh, (5, 5), 0)
+    
 
     detected_circles = cv2.HoughCircles(
         a50_edges_gauss,
         cv2.HOUGH_GRADIENT,
         dp=1,
-        minDist=210,
-        param1=250,
-        param2=25,
-        minRadius=75,
+        minDist=215,
+        param1=260,
+        param2=40,
+        minRadius=85,
         maxRadius=130,
     )
 
@@ -96,8 +124,7 @@ def Canning(image: NParray) -> NParray:
 
         # Draw the circumference of the circle.
         image_drawn = adding_circles(detected_circles, image)
-        
-        
+
     # Sorting Centers of circles
     centers = sorted(centers, key=lambda x: x[1])
     centers = [
@@ -108,21 +135,21 @@ def Canning(image: NParray) -> NParray:
         sorted(centers[16:], key=lambda x: x[0]),
     ]
     centers_sorted: Dict[int, List[int]] = {}
-    counter = 1
-    lids = 0
-    pucks = 0
-    none = 0
+    result: Dict[int,str] = {}
+    counter: int = 1
+
     for i in range(len(centers)):
         for j in centers[i]:
             centers_sorted[counter] = j
             counter += 1
 
-    for circle_param in centers_sorted.values():
+    for circle_param,pos in zip(centers_sorted.values(),centers_sorted.keys()):
         if circle_param[2] < 100:
-            none += 1
+            result[pos] = "None"
         else:
             # Mask Image with Circle
             mask = np.zeros_like(image)
+
             mask = cv2.circle(
                 mask,
                 (circle_param[0], circle_param[1]),
@@ -132,9 +159,25 @@ def Canning(image: NParray) -> NParray:
             )
             masked = cv2.bitwise_and(image, image, mask=mask)
 
+            #slicing to make r = 130 (aka max radiums)
+            y, x, r = circle_param
+            if r > x:
+                x_lower = 0
+            else:
+                x_lower = x - r
+            if r > y:
+                y_lower = 0
+            else:
+                y_lower = y - r
+
+            # Slicing image into sections for quicker analysis
+            masked2 = masked[x_lower : x + r, y_lower : y + r]
+            # fourier(masked2)
+            # template(masked2)
+
             # Find small circles
             mini_circles = cv2.HoughCircles(
-                masked,
+                masked2,
                 cv2.HOUGH_GRADIENT,
                 dp=1,
                 minDist=25,
@@ -146,14 +189,18 @@ def Canning(image: NParray) -> NParray:
 
             if mini_circles is not None:
                 mini_circles = np.uint16(np.around(mini_circles))
-                # show_circles = adding_circles(mini_circles, masked, plot=True)
-                pucks += 1
+                if np.shape(mini_circles)[1] > 5:
+                    show_circles = adding_circles(mini_circles, masked2)
+                    result[pos] = "Puck"
+                else:
+                    result[pos] = "Lid"
             else:
-                lids += 1
+                result[pos] = "Lid"
             pass
-    print(f"Lids: {lids}, Pucks: {pucks}, None: {none}")
 
-    # # show Canny Edge Detection
+    print(result)
+
+    # show Canny Edge Detection
     # cv2.imshow("edges", a50_edges_canny)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
