@@ -3,6 +3,6 @@ data/
 venv/
 src/__pycache__
 src/test.egg-info
-.vscode
+.vscode/
 
 #

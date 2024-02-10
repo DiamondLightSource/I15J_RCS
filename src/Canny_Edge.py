@@ -8,7 +8,7 @@ NParray = NewType("NParray", np.ndarray)
 
 def dewarp(image: NParray, inputs, plot=False) -> NParray:
     assert image is not None, "file could not be read, check with os.path.exists()"
-    rows, cols = image.shape
+    rows, cols, depth = image.shape
     input_points = np.float32([inputs[0], inputs[1], inputs[2], inputs[3]])
     output_points = np.float32([[0, 0], [0, rows], [rows, rows], [rows, 0]])
     M = cv2.getPerspectiveTransform(input_points, output_points)
@@ -23,11 +23,13 @@ def dewarp(image: NParray, inputs, plot=False) -> NParray:
 
 
 def thresholding(image: NParray, plot: bool = False) -> dict:
-    thresh = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
-            cv2.THRESH_BINARY,11,3.5)
-    #Not used, but a good alternative
-    thresh1 = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_MEAN_C,\
-            cv2.THRESH_BINARY,11,3.5)
+    thresh = cv2.adaptiveThreshold(
+        image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 3.5
+    )
+    # Not used, but a good alternative
+    thresh1 = cv2.adaptiveThreshold(
+        image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 3.5
+    )
 
     if plot:
         # Plotting
@@ -101,7 +103,6 @@ def Canning(image: NParray) -> NParray:
     thresh = thresholding(image)
     a50_edges_canny = cv2.Canny(thresh, 150, 250)
     a50_edges_gauss = cv2.GaussianBlur(thresh, (5, 5), 0)
-    
 
     detected_circles = cv2.HoughCircles(
         a50_edges_gauss,
@@ -109,7 +110,7 @@ def Canning(image: NParray) -> NParray:
         dp=1,
         minDist=215,
         param1=260,
-        param2=40,
+        param2=42,
         minRadius=85,
         maxRadius=130,
     )
@@ -135,7 +136,7 @@ def Canning(image: NParray) -> NParray:
         sorted(centers[16:], key=lambda x: x[0]),
     ]
     centers_sorted: Dict[int, List[int]] = {}
-    result: Dict[int,str] = {}
+    result: Dict[int, str] = {}
     counter: int = 1
 
     for i in range(len(centers)):
@@ -143,7 +144,7 @@ def Canning(image: NParray) -> NParray:
             centers_sorted[counter] = j
             counter += 1
 
-    for circle_param,pos in zip(centers_sorted.values(),centers_sorted.keys()):
+    for circle_param, pos in zip(centers_sorted.values(), centers_sorted.keys()):
         if circle_param[2] < 100:
             result[pos] = "None"
         else:
@@ -159,7 +160,7 @@ def Canning(image: NParray) -> NParray:
             )
             masked = cv2.bitwise_and(image, image, mask=mask)
 
-            #slicing to make r = 130 (aka max radiums)
+            # slicing to make r = 130 (aka max radiums)
             y, x, r = circle_param
             if r > x:
                 x_lower = 0
@@ -181,8 +182,8 @@ def Canning(image: NParray) -> NParray:
                 cv2.HOUGH_GRADIENT,
                 dp=1,
                 minDist=25,
-                param1=70,
-                param2=22,
+                param1=50,
+                param2=20,
                 minRadius=7,
                 maxRadius=25,
             )
@@ -198,11 +199,9 @@ def Canning(image: NParray) -> NParray:
                 result[pos] = "Lid"
             pass
 
-    print(result)
-
     # show Canny Edge Detection
     # cv2.imshow("edges", a50_edges_canny)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
-    return image_drawn
+    return centers_sorted, result
