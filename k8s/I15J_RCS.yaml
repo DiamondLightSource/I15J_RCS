@@ -1,0 +1,27 @@
+# The image created was created using the docker file in this repo
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: i15j-rcs
+spec:
+  selector:
+    matchLabels:
+      app: i15j-rcs
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: i15j-rcs
+    spec:
+      containers:
+      - name: i15j-rcs
+        image: gcr.io/diamond-privreg/i15j-rcs:v1
+        command: ["uvicorn"]
+        args: ["main:app", "--host", "0.0.0.0","--port","80"]
+        resources:
+          limits:
+            cpu: "1"
+            memory: 300M
+        ports:
+        - containerPort: 80
+

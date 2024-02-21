@@ -5,33 +5,28 @@
 #
 FROM python:3.10 as build
 
-ARG PIP_OPTIONS=.
+# Create working directory
+WORKDIR /workspace
+COPY . /workspace
+# set up a virtual environment and put it in PATH
+RUN python -m venv /venv
+ENV PATH=/venv/bin:$PATH
+ 
+# install python package into /venv
+RUN pip install --upgrade pip
+RUN pip install .
 
-# Add any system dependencies for the developer/build environment here e.g.
+
+# Add apt-get system dependecies for runtime here if needed
 # RUN apt-get update && apt-get upgrade -y && \
 #     apt-get install -y --no-install-recommends \
 #     desired-packages \
 #     && rm -rf /var/lib/apt/lists/*
 
-# set up a virtual environment and put it in PATH
-RUN python -m venv /venv
-ENV PATH=/venv/bin:$PATH
+RUN apt-get update
+RUN apt-get install libgl1-mesa-glx -y
 
-# Copy any required context for the pip install over
-COPY . /context
-WORKDIR /context
 
-# install python package into /venv
-RUN pip install ${PIP_OPTIONS}
+# ENTRYPOINT ["uvicorn", "main:app", "--host", "172.23.169.93", "--port", "8000"]
 
-FROM python:3.10-slim as runtime
-
-# Add apt-get system dependecies for runtime here if needed
-
-# copy the virtual environment from the build stage and put it in PATH
-COPY --from=build /venv/ /venv/
-ENV PATH=/venv/bin:$PATH
-
-# change this entrypoint if it is not the same as the repo
-ENTRYPOINT ["I15J_RCS"]
-CMD ["--version"]
+EXPOSE 8000
