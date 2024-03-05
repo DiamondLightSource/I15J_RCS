@@ -3,27 +3,33 @@ import cv2
 from Canny_Edge import Canning, dewarp
 import json
 from PIL import Image
-from requests import get
+from requests import get, models
 from io import BytesIO
 import numpy as np
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, applications
+from typing import NewType, List
 
-app = FastAPI()
+NParray = NewType("NParray", np.ndarray)
+Responses = NewType("Responses", models.Responses)
+FastAPIClass = NewType("FastAPIClass", applications.FastAPI)
+
+app: FastAPIClass = FastAPI()
 
 
 def processing():
+    """Function that requests the image from the camera and applies"""
     # Call image from live camera feed
-    url = "http://bl15j-di-serv-01.diamond.ac.uk:8087/JCAM3.mjpg.jpg"
-    response = get(url)
+    url: str = "http://bl15j-di-serv-01.diamond.ac.uk:8087/JCAM3.mjpg.jpg"
+    response: Responses = get(url)
     if response.status_code != 200:
         print("Camera not available")
     else:
-        image = Image.open(BytesIO(response.content))
-        image = np.asarray(image)
-        image = cv2.resize(image, (0, 0), fx=0.6, fy=0.6)
+        image: NParray = Image.open(BytesIO(response.content))
+        image: NParray = np.asarray(image)
+        image: NParray = cv2.resize(image, (0, 0), fx=0.6, fy=0.6)
 
     with open("/workspace/coordinates.json", "r") as file:
-        input_coordinates = json.load(file)
+        input_coordinates: List[List[int]] = json.load(file)
 
     # # Call from images
     # dir_path = "/workspace/data/task_lights_on"
@@ -40,20 +46,22 @@ def processing():
     #     image = cv2.imread(f"{dir_path}/{i+1}.jpg", 1)
     #     image = cv2.resize(image, (0, 0), fx=0.6, fy=0.6)
 
-    dewarped = dewarp(image, input_coordinates)
-    dewarped_bw = cv2.cvtColor(dewarped, cv2.COLOR_BGR2GRAY)
+    dewarped: NParray = dewarp(image, input_coordinates)
+    dewarped_bw: NParray = cv2.cvtColor(dewarped, cv2.COLOR_BGR2GRAY)
     centers, result = Canning(dewarped_bw)
     return result, centers, dewarped
 
 
 @app.get("/result")
 def result():
+    """API Call for all position states"""
     result = processing()[0]
     return {"result": result}
 
 
 @app.get("/position/{position}")
 def position(position: int):
+    """API Call for specific position state"""
     if position > 20 or position < 1:
         state: str = "Not a valid position"
     else:
@@ -66,6 +74,7 @@ def position(position: int):
     "/image", responses={200: {"content": {"image/jpg": {}}}}, response_class=Response
 )
 def image():
+    """API call for annotated image of the processed image"""
     result, centers, image = processing()
     # Annotate Image based off of processing result
     for pos, circle_param in zip(centers.keys(), centers.values()):

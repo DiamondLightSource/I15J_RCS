@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: i15j-rcs-ingrs
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - i15-1-cam3-processing.diamond.ac.uk
+  rules:
+  - host: i15-1-cam3-processing.diamond.ac.uk
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: i15j-rcs-svc # this must match the name of the service you want to target
+            port:
+              number: 8000

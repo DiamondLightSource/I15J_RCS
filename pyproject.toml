@@ -17,6 +17,7 @@ dependencies = [
     "imutils",
     "fastapi[all]",
     "requests",
+    "typing",
 ] 
 
 dynamic = ["version"]

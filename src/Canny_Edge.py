@@ -7,8 +7,9 @@ NParray = NewType("NParray", np.ndarray)
 
 
 def dewarp(image: NParray, inputs, plot=False) -> NParray:
+    """Dewarps image to get rid of any distortions using input coordinates provided from calibration"""
     assert image is not None, "file could not be read, check with os.path.exists()"
-    rows, cols, depth = image.shape
+    rows = image.shape[0]
     input_points = np.float32([inputs[0], inputs[1], inputs[2], inputs[3]])
     output_points = np.float32([[0, 0], [0, rows], [rows, rows], [rows, 0]])
     M = cv2.getPerspectiveTransform(input_points, output_points)
@@ -22,12 +23,13 @@ def dewarp(image: NParray, inputs, plot=False) -> NParray:
     return dst
 
 
-def thresholding(image: NParray, plot: bool = False) -> dict:
-    thresh = cv2.adaptiveThreshold(
+def thresholding(image: NParray, plot: bool = False) -> NParray:
+    """Preprocessing step: applies adaptive thresholding to the image"""
+    thresh: NParray = cv2.adaptiveThreshold(
         image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 3.5
     )
     # Not used, but a good alternative
-    thresh1 = cv2.adaptiveThreshold(
+    thresh1: NParray = cv2.adaptiveThreshold(
         image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 3.5
     )
 
@@ -40,6 +42,7 @@ def thresholding(image: NParray, plot: bool = False) -> dict:
 
 
 def fourier(image: NParray, plot: bool = False):
+    """Not used in code at the moment: Fourier Transform of sliced image to identify features"""
     fourier = np.fft.fft2(np.float32(image))
     fourier_shift = np.fft.fftshift(abs(fourier))
     if plot:
@@ -53,6 +56,7 @@ def fourier(image: NParray, plot: bool = False):
 
 
 def template(image: NParray):
+    """Not used in code at the moment: Template matching to match set image with the current image found."""
     template = cv2.imread("templates/lid.jpg", 0)
     h, w = template.shape
 
@@ -84,6 +88,7 @@ def template(image: NParray):
 
 
 def adding_circles(circles, image, plot=False):
+    """Drawing circles to the image for identifying features."""
     for pt in circles[0, :]:
         x, y, r = pt[0], pt[1], pt[2]
         # Draw the circumference of the circle.
@@ -99,7 +104,8 @@ def adding_circles(circles, image, plot=False):
     return image
 
 
-def Canning(image: NParray) -> NParray:
+def Canning(image: NParray):
+    """Main function that calls preprocessing steps, applies"""
     thresh = thresholding(image)
     a50_edges_canny = cv2.Canny(thresh, 150, 250)
     a50_edges_gauss = cv2.GaussianBlur(thresh, (5, 5), 0)
@@ -124,6 +130,7 @@ def Canning(image: NParray) -> NParray:
             centers.append([x, y, r])
 
         # Draw the circumference of the circle.
+        # Plot point for debugging
         image_drawn = adding_circles(detected_circles, image)
 
     # Sorting Centers of circles
@@ -191,6 +198,7 @@ def Canning(image: NParray) -> NParray:
             if mini_circles is not None:
                 mini_circles = np.uint16(np.around(mini_circles))
                 if np.shape(mini_circles)[1] > 5:
+                    # Plot point for debugging
                     show_circles = adding_circles(mini_circles, masked2)
                     result[pos] = "Puck"
                 else:
