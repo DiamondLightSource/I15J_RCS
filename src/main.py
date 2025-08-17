@@ -10,7 +10,7 @@ from fastapi import FastAPI, Response, applications
 from typing import NewType, List
 
 NParray = NewType("NParray", np.ndarray)
-Responses = NewType("Responses", models.Responses)
+Responses = NewType("Responses", models.Response)
 FastAPIClass = NewType("FastAPIClass", applications.FastAPI)
 
 app: FastAPIClass = FastAPI()
