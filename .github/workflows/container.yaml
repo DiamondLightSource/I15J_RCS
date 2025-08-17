@@ -1,6 +1,9 @@
 name: Container
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -41,7 +44,7 @@ jobs:
       - name: Build Image
         uses: docker/build-push-action@v6.6.1
         with:
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
