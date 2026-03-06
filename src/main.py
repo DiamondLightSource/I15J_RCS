@@ -1,6 +1,6 @@
 import os
 import cv2
-from Canny_Edge import Canning, dewarp
+from edge_detection import Canning, dewarp
 import json
 from PIL import Image
 from requests import get, models

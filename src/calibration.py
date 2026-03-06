@@ -1,5 +1,5 @@
 import cv2
-from Canny_Edge import dewarp
+from edge_detection import dewarp
 from typing import List, NewType
 import numpy as np
 import json
