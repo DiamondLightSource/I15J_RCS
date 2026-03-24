@@ -16,3 +16,35 @@ Service Workflow:
 Documentation:
 User Guide: https://confluence.diamond.ac.uk/display/SSCC/Documentation%3A+User+Guide
 Developer Guide: https://confluence.diamond.ac.uk/display/SSCC/Documentation%3A+Developer%27s+Guide
+
+## Testing Locally
+
+To set up your dev environment, from the top directory:
+
+```
+module load python/3.11
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+cd calibration_ui
+module load node
+npm install
+```
+
+
+To test locally you need to run
+
+```
+export USE_MOCKED_DATA=True
+uvicorn main:app --reload
+```
+
+in one terminal then:
+
+```
+cd calibration_ui
+npm run dev
+```
+
+Then navigate to the URL that is given to you from VITE.
