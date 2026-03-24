@@ -14,7 +14,7 @@ ENV PATH=/venv/bin:$PATH
 
 # install python package into /venv
 RUN pip install --upgrade pip
-RUN pip install .
+RUN pip install .[dev]
 
 
 # Add apt-get system dependencies for runtime here if needed

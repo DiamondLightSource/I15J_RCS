@@ -25,6 +25,11 @@ license.file = "LICENSE"
 readme = "README.rst"
 requires-python = ">=3.10"
 
+[dependency-groups]
+dev = [
+    "pytest"
+]
+
 [project.urls]
 GitHub = "https://github.com/TBThomas56/I15J_RCS"
 
