@@ -13,10 +13,6 @@ Service Workflow:
 6. Identify state of positions ["None", "Puck", "Lid"]
 7. Return FastAPI response -  ["result"], ["position"], ["image"]
 
-Documentation:
-User Guide: https://confluence.diamond.ac.uk/display/SSCC/Documentation%3A+User+Guide
-Developer Guide: https://confluence.diamond.ac.uk/display/SSCC/Documentation%3A+Developer%27s+Guide
-
 ## Testing Locally
 
 To set up your dev environment, from the top directory:
@@ -31,7 +27,6 @@ cd calibration_ui
 module load node
 npm install
 ```
-
 
 To test locally you need to run
 
@@ -48,3 +43,16 @@ npm run dev
 ```
 
 Then navigate to the URL that is given to you from VITE.
+
+Alternatively you can run the pod locally with:
+
+```
+podman build -t i15j-rcs .
+podman run -p 8000:8000 -e USE_MOCKED_DATA=true i15j-rcs:latest
+```
+
+and navigate to http://127.0.0.1:8000/.
+
+## Older Documentation:
+User Guide: https://confluence.diamond.ac.uk/display/SSCC/Documentation%3A+User+Guide
+Developer Guide: https://confluence.diamond.ac.uk/display/SSCC/Documentation%3A+Developer%27s+Guide

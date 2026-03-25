@@ -3,7 +3,12 @@ import { Box } from "@mui/material";
 
 type Point = { x: number; y: number };
 
-export default function TrapezoidSelector({ imageRef, imageSrc, onChange, initialPoints }) {
+export default function TrapezoidSelector({ imageRef, imageSrc, onChange, initialPoints }: {
+    imageRef: React.RefObject<HTMLImageElement | null>;
+    imageSrc: string | null;
+    onChange: (pts: Point[]) => void;
+    initialPoints: Point[];
+}) {
     const [points, setPoints] = useState<Point[]>(initialPoints);
 
 
@@ -46,7 +51,7 @@ export default function TrapezoidSelector({ imageRef, imageSrc, onChange, initia
         <Box sx={{ position: "relative", display: "inline-block" }}>
             <img
                 ref={imageRef}
-                src={imageSrc}
+                src={imageSrc ?? undefined}
                 style={{ display: "block", maxWidth: "100%" }}
             />
 

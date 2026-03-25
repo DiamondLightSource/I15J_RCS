@@ -1,8 +1,17 @@
+
 # This file is for use as a devcontainer and a runtime container
 #
 # The devcontainer should use the build target and run as root with podman
 # or docker with user namespaces.
 #
+
+# Build static UI
+FROM node:20 AS ui-build
+WORKDIR /workspace/calibration_ui
+COPY calibration_ui/ .
+RUN npm install
+RUN npm run build
+
 FROM python:3.10 AS build
 
 # Create working directory
@@ -16,17 +25,12 @@ ENV PATH=/venv/bin:$PATH
 RUN pip install --upgrade pip
 RUN pip install .[dev]
 
-
-# Add apt-get system dependencies for runtime here if needed
-# RUN apt-get update && apt-get upgrade -y && \
-#     apt-get install -y --no-install-recommends \
-#     desired-packages \
-#     && rm -rf /var/lib/apt/lists/*
-
 RUN apt-get update
 RUN apt-get install libgl1 -y
 RUN apt-get install libglx-mesa0 -y
 
-# ENTRYPOINT ["uvicorn", "main:app", "--host", "172.23.169.93", "--port", "8000"]
+COPY --from=ui-build /workspace/calibration_ui/dist ./static
+
+ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 EXPOSE 8000

@@ -11,15 +11,15 @@ export interface Point {
 }
 
 export default function AnnotatePage() {
-    const [stage, setStage] = useState<"table" | "centres" | "annotated">("table");
+    const [stage, setStage] = useState<"annotated" | "table" | "centres">("annotated");
 
-    const [ready, setReady] = useState(false);
-    const [trapezoid, setTrapezoid] = useState(null);
-    const [centres, setCentres] = useState([]);
+    const [trapezoid, setTrapezoid] = useState<Point[] | null>(null);
+    const [centres, setCentres] = useState<Point[]>([]);
 
+    const [annotated_image, setAnnotatedImage] = useState<string | null>(null);
     const [raw_image, setRawImage] = useState<string | null>(null);
     const [dewarped_image, setDewarpedImage] = useState<string | null>(null);
-    const [annotated_image, setAnnotatedImage] = useState<string | null>(null);
+
 
     const [initial_dewarp, setInitialDewarp] = useState<Point[]>([
         { x: 0.1, y: 0.1 },   // top-left
@@ -30,7 +30,7 @@ export default function AnnotatePage() {
 
     const imgRef = useRef<HTMLImageElement>(null);
 
-    async function fetchInitialDewarp(endpoint: string): Promise<Point[]> {
+    async function fetchPoints(endpoint: string): Promise<Point[]> {
         const res = await fetch(endpoint);
         return res.json() as Promise<Point[]>;
     }
@@ -42,40 +42,38 @@ export default function AnnotatePage() {
     }
 
     useEffect(() => {
-        async function load() {
-            const imgUrl = await fetchImageUrl(serverURL + "/raw_image");
-            setRawImage(imgUrl);
+        fetchImageUrl(serverURL + "/annotated_image").then(setAnnotatedImage);
+    }, []);
 
-            await new Promise<void>((resolve) => {
-                const img = new Image();
-                img.src = imgUrl;
-                img.onload = () => resolve();
-            });
+    const startCalibration = async () => {
+        const imgUrl = await fetchImageUrl(serverURL + "/raw_image");
+        setRawImage(imgUrl);
 
-            const points = await fetchInitialDewarp(serverURL + "/dewarp_coordinates");
+        await new Promise<void>((resolve) => {
+            const img = new Image();
+            img.src = imgUrl;
+            img.onload = () => resolve();
+        });
 
-            if (points.length > 0) {
-                setInitialDewarp(points);
-            }
+        const points = await fetchPoints(serverURL + "/dewarp_coordinates");
 
-            setReady(true);
+        if (points.length > 0) {
+            setInitialDewarp(points);
         }
 
-        load();
-    }, []);
+        setStage("table");
+    }
 
     const submitTableTrapezoid = async () => {
         if (!trapezoid) return;
 
-        const w = imgRef.current.clientWidth;
-        const h = imgRef.current.clientHeight;
+        const w = imgRef.current!.clientWidth;
+        const h = imgRef.current!.clientHeight;
 
         const normalized = trapezoid.map(p => ({
             x: p.x / w,
             y: p.y / h,
         }));
-
-        console.log("Submitting coordinates:", normalized);
 
         await fetch(serverURL + "/dewarp_coordinates", {
             method: "POST",
@@ -85,12 +83,16 @@ export default function AnnotatePage() {
 
         // Load dewarped image after submission
         fetchImageUrl(serverURL + "/dewarped_image").then(setDewarpedImage);
+
+        const points = await fetchPoints(serverURL + "/position_centres");
+        setCentres(points);
+
         setStage("centres");
     };
 
     const submitPositionCentres = async () => {
         if (!centres) return;
-        console.log("Final centres:", centres);
+
         await fetch(serverURL + "/position_centres", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -104,7 +106,21 @@ export default function AnnotatePage() {
 
     return (
         <Container maxWidth="md" sx={{ py: 4 }}>
-            {stage === "table" && ready && (
+            {stage === "annotated" && (
+                <>
+                    <Typography variant="h5">Below is the annotated image, if it does not appear you may need to calibrate first</Typography>
+                    <img ref={imgRef} src={annotated_image ?? undefined} style={{ display: "block", maxWidth: "100%" }} />
+                    <Button
+                        variant="contained"
+                        sx={{ mt: 2 }}
+                        onClick={startCalibration}
+                    >
+                        Calibrate detection
+                    </Button>
+                </>
+            )}
+
+            {stage === "table" && (
                 <>
                     <Typography variant="h5">Draw the trapezoid around the table</Typography>
                     <TrapezoidSelector imageRef={imgRef} imageSrc={raw_image} onChange={setTrapezoid} initialPoints={initial_dewarp} />
@@ -134,13 +150,6 @@ export default function AnnotatePage() {
                     >
                         Submit centres
                     </Button>
-                </>
-            )}
-
-            {stage === "annotated" && (
-                <>
-                    <Typography variant="h5">Below is the annotated image</Typography>
-                    <img ref={imgRef} src={annotated_image} style={{ display: "block", maxWidth: "100%" }} />
                 </>
             )}
         </Container>

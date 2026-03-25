@@ -13,20 +13,18 @@ from fastapi.middleware.cors import CORSMiddleware
 import math
 import os
 
+from fastapi.staticfiles import StaticFiles
+
+
 NParray = NewType("NParray", np.ndarray)
 Responses = NewType("Responses", models.Response)
 FastAPIClass = NewType("FastAPIClass", applications.FastAPI)
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",  # Vite dev server
-    "http://127.0.0.1:5173",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,7 +39,7 @@ storage = {"dewarp_coords": [], "position_centres": []}
 def get_image():
     """Function that requests the image from the camera"""
     if USE_MOCKED_DATA:
-        test_data_folder = Path(__file__).parent.parent / "tests" / "test_data"
+        test_data_folder = Path("tests") / "test_data"
         test_file_path = test_data_folder / "bad_image.jpg"
         return Image.open(test_file_path)
     response = get(CAM_URL)
@@ -219,3 +217,6 @@ def store_position_centres(payload: list[Any]):
 @app.get("/position_centres")
 def get_position_centres():
     return storage["position_centres"]
+
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

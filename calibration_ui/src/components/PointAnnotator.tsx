@@ -1,15 +1,31 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Box } from "@mui/material";
 
-export default function PointAnnotator({ imageRef, imageSrc, points, onChange }) {
-    const [localPoints, setLocalPoints] = useState(points);
+export interface Point {
+    x: number;
+    y: number;
+}
 
-    const update = (pts) => {
+export default function PointAnnotator({ imageRef, imageSrc, points, onChange }
+    : {
+        imageRef: React.RefObject<HTMLImageElement | null>;
+        imageSrc: string | null;
+        points: Point[];
+        onChange?: (pts: Point[]) => void;
+    }) {
+    const [localPoints, setLocalPoints] = useState(points);
+    const dragging = useRef(false);
+
+    const update = (pts: Point[]) => {
         setLocalPoints(pts);
         onChange?.(pts);
     };
 
-    const addPoint = (e) => {
+    const addPoint = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (dragging.current) {
+            dragging.current = false;
+            return;
+        }
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -17,10 +33,12 @@ export default function PointAnnotator({ imageRef, imageSrc, points, onChange })
         update([...localPoints, { x, y }]);
     };
 
-    const startDrag = (index, startX, startY) => {
+    const startDrag = (index: number, startX: number, startY: number) => {
+        dragging.current = true;
+
         const orig = localPoints[index];
 
-        const move = (ev) => {
+        const move = (ev: MouseEvent) => {
             const dx = ev.clientX - startX;
             const dy = ev.clientY - startY;
 
@@ -45,7 +63,7 @@ export default function PointAnnotator({ imageRef, imageSrc, points, onChange })
             sx={{ position: "relative", display: "inline-block" }}
             onClick={addPoint}
         >
-            <img ref={imageRef} src={imageSrc} style={{ display: "block", maxWidth: "100%" }} />
+            <img ref={imageRef} src={imageSrc ?? undefined} style={{ display: "block", maxWidth: "100%" }} />
 
             <svg
                 style={{
