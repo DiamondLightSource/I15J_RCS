@@ -24,7 +24,7 @@ source .venv/bin/activate
 pip install -e .
 
 cd calibration_ui
-module load node
+module load node/latest
 npm install
 ```
 
