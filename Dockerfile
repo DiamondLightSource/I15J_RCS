@@ -31,6 +31,8 @@ RUN apt-get install libglx-mesa0 -y
 
 COPY --from=ui-build /workspace/calibration_ui/dist ./static
 
+ENV SERVE_UI=True
+
 ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 EXPOSE 8000

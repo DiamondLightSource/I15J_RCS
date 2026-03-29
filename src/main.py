@@ -31,6 +31,8 @@ app.add_middleware(
 )
 
 USE_MOCKED_DATA = os.environ.get("USE_MOCKED_DATA", False)
+SERVE_UI = os.environ.get("SERVE_UI", False)
+
 CAM_URL = "http://bl15j-di-serv-01.diamond.ac.uk:8087/JCAM3.mjpg.jpg"
 
 storage = {"dewarp_coords": [], "position_centres": []}
@@ -219,4 +221,5 @@ def get_position_centres():
     return storage["position_centres"]
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+if SERVE_UI:
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
